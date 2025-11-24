@@ -201,6 +201,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - `GET /api/exchange-rates` - Get exchange rates
 - `GET /api/news` - Get financial news
 
-## License
+## Links
+Youtube:
+Server: - liata.tech
+        -www.liata.tech
+        -lb-01.liata.tech
+        -	web-01.liata.tech
+        -	web-02.liata.tech
 
-MIT
