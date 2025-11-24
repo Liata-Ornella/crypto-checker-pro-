@@ -202,7 +202,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - `GET /api/news` - Get financial news
 
 ## Links
-Youtube:
+Canva Video Link:https://www.canva.com/design/DAG5pqbum8I/XfMoQoIhLK66KCGG3yXb_g/watch?utm_content=DAG5pqbum8I&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hca85f03e7e
 Server: - liata.tech
         -www.liata.tech
         -lb-01.liata.tech
