@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Tracker Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #ffebee;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        
+        .crypto-card {
+            background: white;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .crypto-card:hover {
+            border-color: #60a5fa;
+        }
+        
+        .price-up {
+            color: #10b981;
+        }
+        
+        .price-down {
+            color: #ef4444;
+        }
+        
+        .price-change {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+        
+        .positive-bg {
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+        
+        .negative-bg {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+        
+        .refresh-btn {
+            transition: transform 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: rotate(180deg);
+        }
+        
+        .loading {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .header-gradient {
+            background: #ec4899;
+        }
+        
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <header class="header-gradient text-white rounded-2xl p-6 mb-8 shadow-lg animate__animated animate__fadeInDown">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h1 class="text-3xl md:text-4xl font-bold">Crypto Tracker Pro</h1>
+                    <p class="opacity-90 mt-1">Real-time cryptocurrency prices and trends</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="lastUpdated" class="text-sm opacity-80"></span>
+                    <button onclick="fetchCryptoData()" 
+                            class="bg-white text-indigo-600 px-4 py-2 rounded-full font-medium flex items-center space-x-2 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white rounded-xl p-6 shadow-md animate__animated animate__fadeInLeft">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">Total Market Cap</p>
+                        <h3 class="text-2xl font-bold" id="totalMarketCap">-</h3>
+                    </div>
+                    <div class="p-3 bg-indigo-100 rounded-full">
+                        <i class="fas fa-chart-line text-indigo-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-md animate__animated animate__fadeInUp">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">24h Volume</p>
+                        <h3 class="text-2xl font-bold" id="totalVolume">-</h3>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <i class="fas fa-exchange-alt text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-md animate__animated animate__fadeInRight">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">Active Cryptocurrencies</p>
+                        <h3 class="text-2xl font-bold" id="activeCryptos">-</h3>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <i class="fas fa-coins text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="cryptoContainer">
+            <div class="crypto-card p-6 loading" style="height: 180px;"></div>
+            <div class="crypto-card p-6 loading" style="height: 180px;"></div>
+            <div class="crypto-card p-6 loading" style="height: 180px;"></div>
+            <div class="crypto-card p-6 loading" style="height: 180px;"></div>
+        </div>
+    </div>
+
+    <script>
+        const cryptos = ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOT', 'DOGE', 'AVAX', 'MATIC'];
+        let marketData = {};
+        
+        function formatNumber(num, decimals = 2) {
+            if (num >= 1e12) return `$${(num / 1e12).toFixed(decimals)}T`;
+            if (num >= 1e9) return `$${(num / 1e9).toFixed(decimals)}B`;
+            if (num >= 1e6) return `$${(num / 1e6).toFixed(decimals)}M`;
+            if (num >= 1e3) return `$${(num / 1e3).toFixed(decimals)}K`;
+            return `$${num.toFixed(decimals)}`;
+        }
+        
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleTimeString()}`;
+        }
+        async function fetchCryptoData() {
+            const container = document.getElementById('cryptoContainer');
+            
+            container.innerHTML = `
+                <div class="crypto-card p-6 col-span-full text-center py-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Loading cryptocurrency data...</p>
+                </div>
+            `;
+            
+            try {
+                const tickerPromises = cryptos.map(symbol => 
+                    axios.get(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}USDT`)
+                );
+                
+                const [tickerResponses, marketResponse] = await Promise.all([
+                    Promise.all(tickerPromises),
+                    axios.get('https://api.binance.com/api/v3/ticker/24hr')
+                ]);
+                
+                marketData = marketResponse.data;
+                
+                updateStats();
+                
+                container.innerHTML = '';
+                
+                tickerResponses.forEach((response, index) => {
+                    const data = response.data;
+                    const priceChange = parseFloat(data.priceChangePercent);
+                    const changeClass = priceChange >= 0 ? 'positive' : 'negative';
+                    const changeBgClass = priceChange >= 0 ? 'positive-bg' : 'negative-bg';
+                    const changeIcon = priceChange >= 0 ? '▲' : '▼';
+                    const price = parseFloat(data.lastPrice);
+                    const volume = parseFloat(data.quoteVolume);
+                    
+                    const card = document.createElement('div');
+                    card.className = 'crypto-card p-6 animate__animated animate__fadeIn';
+                    card.style.animationDelay = `${index * 0.1}s`;
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-2xl">${getCryptoIcon(cryptos[index])}</span>
+                                    <div>
+                                        <h3 class="text-xl font-bold">${cryptos[index]}</h3>
+                                        <p class="text-sm text-gray-500">${getCryptoName(cryptos[index])}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="text-2xl">${getTrendIcon(priceChange)}</span>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="text-2xl font-bold mb-1">$${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: price < 1 ? 6 : 2})}</div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-500">24h Change</span>
+                                <span class="price-change ${changeClass} ${changeBgClass} px-2 py-1 rounded-full text-xs">
+                                    ${changeIcon} ${Math.abs(priceChange).toFixed(2)}%
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <p class="text-gray-500">24h High</p>
+                                <p class="font-medium">$${parseFloat(data.highPrice).toLocaleString(undefined, {maximumFractionDigits: 4})}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-gray-500">24h Low</p>
+                                <p class="font-medium">$${parseFloat(data.lowPrice).toLocaleString(undefined, {maximumFractionDigits: 4})}</p>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+                
+                updateLastUpdated();
+                
+                setTimeout(() => {
+                    const cards = document.querySelectorAll('.crypto-card');
+                    cards.forEach(card => {
+                        card.classList.add('animate__fadeInUp');
+                    });
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                container.innerHTML = `
+                    <div class="col-span-full text-center p-8 bg-red-50 rounded-xl border border-red-100 animate__animated animate__shakeX">
+                        <div class="text-red-500 text-5xl mb-4">⚠️</div>
+                        <h3 class="text-xl font-semibold text-red-700 mb-2">Connection Error</h3>
+                        <p class="text-red-600 mb-4">Failed to load cryptocurrency data. Please check your internet connection and try again.</p>
+                        <button onclick="fetchCryptoData()" class="bg-red-600 text-white px-6 py-2 rounded-full font-medium hover:bg-red-700 transition-colors">
+                            <i class="fas fa-sync-alt mr-2"></i>Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        function updateStats() {
+            const totalMarketCap = marketData.reduce((sum, coin) => sum + parseFloat(coin.quoteVolume), 0);
+            const totalVolume = marketData.reduce((sum, coin) => sum + parseFloat(coin.volume), 0);
+            
+            document.getElementById('totalMarketCap').textContent = formatNumber(totalMarketCap);
+            document.getElementById('totalVolume').textContent = formatNumber(totalVolume);
+            document.getElementById('activeCryptos').textContent = marketData.length.toLocaleString();
+        }
+        
+        function getCryptoIcon(symbol) {
+            const icons = {
+                'BTC': '₿',
+                'ETH': 'Ξ',
+                'BNB': 'ⓑ',
+                'ADA': '₳',
+                'SOL': '◎',
+                'XRP': '✕',
+                'DOT': '●',
+                'DOGE': 'Ð',
+                'AVAX': '⭙',
+                'MATIC': 'Ⓜ'
+            };
+            return icons[symbol] || '₿';
+        }
+        
+        function getCryptoName(symbol) {
+            const names = {
+                'BTC': 'Bitcoin',
+                'ETH': 'Ethereum',
+                'BNB': 'Binance Coin',
+                'ADA': 'Cardano',
+                'SOL': 'Solana',
+                'XRP': 'Ripple',
+                'DOT': 'Polkadot',
+                'DOGE': 'Dogecoin',
+                'AVAX': 'Avalanche',
+                'MATIC': 'Polygon'
+            };
+            return names[symbol] || symbol;
+        }
+        
+        function getTrendIcon(change) {
+            if (change > 5) return '🚀';
+            if (change > 2) return '📈';
+            if (change > 0) return '⬆️';
+            if (change < -5) return '💥';
+            if (change < 0) return '⬇️';
+            return '➡️';
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCryptoData();
+            setInterval(fetchCryptoData, 30000);
+        });
+    </script>
+</body>
+</html>
